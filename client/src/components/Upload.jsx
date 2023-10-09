@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import "../styles/Upload.css"; // Import the CSS file
 
 const Upload = () => {
@@ -30,6 +31,36 @@ const Upload = () => {
       };
       reader.readAsText(file);
     }
+  };
+
+  // const handlePredict=()=>{}
+  const handlePredict = () => {
+    // Define a dummy payload for testing
+    const dummyData = [
+      {
+        feature1: 0.5,
+        feature2: 0.6,
+        feature3: 0.7,
+      },
+      {
+        feature1: 0.2,
+        feature2: 0.3,
+        feature3: 0.4,
+      },
+      // Add more data as needed
+    ];
+
+    // Send the dummy data to the server for prediction
+    axios
+      .post("http://localhost:3001/predict", dummyData)
+      .then((response) => {
+        const prediction = response.data.prediction;
+        // Handle the prediction data as needed, e.g., update state or display it
+        console.log("Prediction:", prediction);
+      })
+      .catch((error) => {
+        console.error("Error predicting:", error);
+      });
   };
 
   return (
@@ -66,9 +97,10 @@ const Upload = () => {
       {showTrainBtn && (
         <button
           className="train-button"
-          onClick={() => console.log("training")}
+          onClick={(data) => handlePredict(data)}
         >
-          Click to Train
+          {/* Click to Train */}
+          click
         </button>
       )}
     </div>
