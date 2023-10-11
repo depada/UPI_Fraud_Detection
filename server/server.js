@@ -1,37 +1,58 @@
 const express = require("express");
 const cors = require("cors");
-const tf = require("@tensorflow/tfjs");
-const path = require("path"); // Import the path module
+const multer = require("multer");
+const bodyParser = require("body-parser");
+const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 const app = express();
 const port = 3001;
 
-// Enable CORS for your React.js frontend
 app.use(cors());
+app.use(express.json());
+app.use(bodyParser.json({ limit: "50mb" })); // Set the request body size limit to 50MB
 
-// Define an async function to load the model
-async function loadModel() {
-  // Get the absolute path to the model file
-  const modelPath = path.resolve(__dirname, "saved_model.pb");
+// Set up storage for uploaded CSV file
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-  // Load your trained TensorFlow model
-  const model = await tf.loadLayersModel(`file://${modelPath}`);
-  return model;
-}
+// Define a route to train the model
+app.post("/train-model", upload.single("csvFile"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded." });
+    }
 
-// Define an endpoint for making predictions
-app.post("/predict", async (req, res) => {
-  const inputData = req.body;
+    // Generate a unique file name for the temporary CSV file
+    const tempFilePath = path.join(__dirname, "temp", `${Date.now()}.csv`);
 
-  // Load the model using the async function
-  const model = await loadModel();
+    // Write the CSV data to the temporary file
+    fs.writeFileSync(tempFilePath, req.file.buffer);
 
-  // Perform predictions using your loaded model
-  const prediction = model.predict(tf.tensor(inputData));
+    // Spawn a Python process to run the script and pass the temporary file path as an argument
+    const pythonProcess = spawn("python", ["fraud_detection.py", tempFilePath]);
 
-  // Convert prediction to JSON
-  res.json({ prediction: prediction.arraySync() });
+    pythonProcess.stdout.on("data", (data) => {
+      const message = data.toString();
+      res.json({ message }); // Return the message from the Python script
+    });
+
+    pythonProcess.stderr.on("data", (data) => {
+      console.error(data.toString());
+      res
+        .status(500)
+        .json({ error: "An error occurred while training the model." });
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing the request." });
+  }
 });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+// ... (rest of your server code)
