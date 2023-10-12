@@ -12,6 +12,8 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 from sklearn.metrics import accuracy_score
 import sys
+import os
+from io import StringIO  # Import StringIO from the io module
 
 # Parse CSV data from command-line argument
 try:
@@ -21,28 +23,48 @@ except IndexError:
     sys.exit(1)
 
 # Parse CSV data into a DataFrame
-csv_data = csv_data.splitlines()
-dataset = pd.read_csv(pd.compat.StringIO("\n".join(csv_data)))
+# csv_data = csv_data.splitlines()
+
+pathName = StringIO("\n".join(csv_data))
+# dataset = pd.read_csv(pathName)
+dataset = pd.read_csv("./upi_fraud_dataset.csv")
 
 # Preprocess the dataset
-dataset = dataset.drop(columns=["category", "state"])
+# dataset = dataset.drop(columns=["category", "state"])
+# print("dataset==>", dataset.head(5))
 
-# Split the dataset
-x = dataset.iloc[:, :10].values
-y = dataset.iloc[:, 7].values
+# # Split the dataset
+# x = dataset.iloc[:, :10].values
+# y = dataset.iloc[:, 6].values
 
-x_train, x_test, y_train, y_test = train_test_split(
-    x, y, test_size=0.15, random_state=0
-)
+# x_train, x_test, y_train, y_test = train_test_split(
+#     x, y, test_size=0.15, random_state=0
+# )
 
 # # Standardize the data
 # scaler = StandardScaler()
 # x_train = scaler.fit_transform(x_train)
 # x_test = scaler.transform(x_test)
-# # Standardize the data
+# ...
+
+# Preprocess the dataset
+dataset = dataset.drop(columns=["category", "state"])
+
+# Split the dataset
+x = dataset.iloc[:, :8].values  # Update this to [:8] since you have 8 remaining columns
+y = dataset.iloc[:, 8].values  # Assuming the target column is at index 8
+
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y, test_size=0.15, random_state=0
+)
+
+# Standardize the data
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
+
+# ...
+
 
 # Define a dictionary of models
 models = {

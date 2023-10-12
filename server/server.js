@@ -10,31 +10,27 @@ const port = 3001;
 
 app.use(cors());
 app.use(express.json());
-app.use(bodyParser.json({ limit: "50mb" })); // Set the request body size limit to 50MB
+app.use(bodyParser.json({ limit: "60mb" }));
 
-// Set up storage for uploaded CSV file
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Define a route to train the model
 app.post("/train-model", upload.single("csvFile"), (req, res) => {
+  console.log("file==>", req.file);
+
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded." });
+  }
+
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
-    }
-
-    // Generate a unique file name for the temporary CSV file
     const tempFilePath = path.join(__dirname, "temp", `${Date.now()}.csv`);
-
-    // Write the CSV data to the temporary file
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
-    // Spawn a Python process to run the script and pass the temporary file path as an argument
     const pythonProcess = spawn("python", ["fraud_detection.py", tempFilePath]);
 
     pythonProcess.stdout.on("data", (data) => {
       const message = data.toString();
-      res.json({ message }); // Return the message from the Python script
+      res.json({ message }); // Send the message from the Python script as a response
     });
 
     pythonProcess.stderr.on("data", (data) => {
@@ -54,5 +50,3 @@ app.post("/train-model", upload.single("csvFile"), (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
-// ... (rest of your server code)
